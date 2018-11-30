@@ -1,9 +1,11 @@
+from __future__ import division
 import sys
 from PIL import Image
 import copy
 import math
 import time
 import random
+
 
 '''
 These variables are determined at runtime and should not be changed or mutated by you
@@ -15,25 +17,22 @@ difficulty = ""  # a string reference to the original import file
 '''
 These variables determine display coler, and can be changed by you, I guess
 '''
-NEON_GREEN = (0, 255, 0)
-PURPLE = (85, 26, 139)
-LIGHT_GRAY = (50, 50, 50)
-DARK_GRAY = (100, 100, 100)
+GREEN = (0, 255, 0)
+PURPLE = (127, 0, 255)
+BLUE = (0, 0, 255)
 
 '''
 These variables are determined and filled algorithmically, and are expected (and required) be mutated by you
 '''
 path = []  # an ordered list of (x,y) tuples, representing the path to traverse from start-->goal
-expanded = {}  # a dictionary of (x,y) tuples, representing nodes that have been expanded
-frontier = {}  # a dictionary of (x,y) tuples, representing nodes to expand to in the future
-A = 1 #global constants
-B = 100
-C = 1
 
+A = 50 #global constants
+B = 100
+C = -20
+
+# performs genetic search of area with goal of exploring all free nodes
 def search(map, size):
     """
-    This function is meant to use the global variables [start, end, path, expanded, frontier] to search through the
-    provided map.
     :param map: A '1-concept' PIL PixelAccess object to be searched. (basically a 2d boolean array)
     """
 
@@ -41,17 +40,8 @@ def search(map, size):
     print ("pixel value at start point ", map[start[0], start[1]])
     print ("pixel value at end point ", map[end[0], end[1]])
 
-    # put your final path into this array (so visualize_search can draw it in purple)
-    # path.extend([(8,2), (8,3), (8,4), (8,5), (8,6), (8,7)])
+    start1 = time.clock() # timer
 
-    # put your expanded nodes into this dictionary (so visualize_search can draw them in dark gray)
-    # expanded.update({(7,2):True, (7,3):True, (7,4):True, (7,5):True, (7,6):True, (7,7):True})
-
-    # put your frontier nodes into this dictionary (so visualize_search can draw them in light gray)
-    # frontier.update({(6,2):True, (6,3):True, (6,4):True, (6,5):True, (6,6):True, (6,7):True})
-
-
-    start1 = time.clock()
     # Begin
     Ps = start #start position
     Pe = end #end position
@@ -66,12 +56,17 @@ def search(map, size):
     clean = []  #global path of cleaned (x,y) pairs
     node = Ps #current position of robot
 
+    cfree,cobs = nodegraph(map,size)
+    print ("Free Nodes in Map: ", len(cfree))
+    print ("Obstacle Nodes in Map: ", len(cobs))
+    print ("Total Nodes in Map: ", len(cfree)+len(cobs))
+
     # Initialization
     # Create 8 random minipaths from start point to seed population
     minipath = get_minipaths(map, size, node, path_size, 8)
 
     # Genetic Motion Planner
-    while (count != 1000) and (Pe not in clean):
+    while (count != 15000): # and (Pe not in clean):
         count += 1
         print("# OF GENERATIONS>>", count)
 
@@ -96,43 +91,59 @@ def search(map, size):
         #print("parent1", parent1)
         #print("parent2", parent2)
 
-        # 50% chance of crossover or mutation
-        # if random.randint(0, 1) == 1:
-        #     # Crossover
-        #     child1, child2 = crossover(parent1, parent2)
-        # else:
-        #     child1 = parent1
-        #     child2 = parent2
-        #
+        # 50% chance of Crossover
+        if random.randint(0, 1) == 2:
+            # Crossover
+            child1, child2 = crossover(parent1, parent2)
+        else:
+            child1 = parent1
+            child2 = parent2
         # print("child1", child1)
         # print("child2", child2)
-        #
-        # if random.randint(0, 1) == 1:
-        #     # Mutation
-        #     child1 = mutation(child1, map, size)
-        #     child2 = mutation(child2, map, size)
 
+        # 50% chance of Mutation
+        if random.randint(0, 1) == 1:
+            # Mutation
+            child1 = mutation(child1, map, size)
+            child2 = mutation(child2, map, size)
+        # print("child1", child1)
+        # print("child2", child2)
 
-        # Add fittest path to global route
+        # Add fittest parent to global route
         if not (parent1 in clean):
             clean.extend(parent1)
 
-        print('Clean=', clean)
+        #print('Clean=', clean)
         node = clean[-1]  # update current position of robot
-        print('Node=', node)
+        #print('Node=', node)
         minipath = []
         minipath = get_minipaths(map, size, node, path_size, nbr_paths)
 
-        minipath.append(parent1)
-        minipath.append(parent2)
-        print("minipath", minipath)
+        minipath.append(child1)
+        minipath.append(child2)
+        #print("minipath", minipath)
 
-        path.extend(clean)
-        #print(path)
-
-    print ("Number of Nodes visited by Genetic: ", len(path))
+    path.extend(clean)
+    #print(path)
+    visited = [x for x in cfree if x in path] #list of visited nodes
+    print ("Number of Nodes generated by Genetic: ", len(path))
+    print ("Number of unique Nodes visited by Genetic: ", len(visited))
     print ("Time in sec taken for Genetic: ", "{0:.2f}".format(time.clock() - start1))
+    print ("Percentage of Coverage for Genetic: ", "{:.2f}%".format((len(visited)/len(cfree))*100))
     visualize_search("out.png")  # see what your search has wrought (and maybe save your results)
+
+
+# function that creates node graph of all free and obs spaces in workspace
+def nodegraph(map,size):
+    cfree = []
+    cobs = []
+    for i in range(0,size[0]):
+        for j in range(0,size[1]):
+            if (map[i, j] == 1 or map[i, j] == (255,255,255)):
+                cfree.append((i,j))
+            else:
+                cobs.append((i,j))
+    return cfree, cobs
 
 
 # function that returns all unique minipaths originating from a node
@@ -143,31 +154,31 @@ def get_minipaths(map,size,node,path_size,nbr_paths):
         mpath = []  # array of current minipath
         mpath.append(node)
         while len(mpath) < path_size:  # append neighbors to node until equal to minipath size
-            next = successors(map, size, mpath[-1])  # get neighbors of node
-            print("successors:", next)
-            print(mpath)
-            #delete successors that are already in mpath
-
-            result = next in mpath #all(elem in next for elem in mpath)  # true if all neighbors already in minipath
-            print(result)
-            if next == [] or result:  # new minipaths not possible
+            succ = successors(map, size, mpath[-1])  # get neighbors of node
+            #print("successors:", succ)
+            #print(mpath)
+            next = [x for x in succ if x not in mpath] #delete successors that are already in mpath
+            #print(next)
+            if next == []:  # new minipaths not possible
                 nbrpaths = 0
                 break
             gene = random.choice(next)  # select random neighbor
-            print(gene)
-            if gene not in mpath:  # add to minipath if not already in it
-                mpath.append(gene)
-                print("mpath:", mpath)
+            #print(gene)
+            mpath.append(gene)
+            #print("mpath:", mpath)
         if (len(mpath) == path_size) and not (mpath in minipaths):  # validate minipath size and uniqueness and add to list
             minipaths.append(mpath)
-            print("minipaths:",minipaths)
+            #print("minipaths:",minipaths)
         else:
             nbrpaths -= 1
-            print(nbrpaths)
+            #print(nbrpaths)
 
     return minipaths
 
 
+# assigns a fitness score for each minipath
+# fitness is weighted based on # of unclean nodes first,
+#   consecutive unclean nodes second, and distance from nodes third
 def fitness(ipath,cleaned):
     #ipath is a minipath of length=path_size
     #cleaned is an array of visited nodes
@@ -178,15 +189,19 @@ def fitness(ipath,cleaned):
     for j in range(len(ipath)-1):
         #print(j)
         #print(ipath[j])
-        Dist = Dist + 1 #eucledean(ipath[j],ipath[j+1])
+        Dist += 1 #eucledean(ipath[j],ipath[j+1]) = 1
+        #print (cleaned)
+        #print(ipath[j+1])
         if not (ipath[j+1] in cleaned):
             Free = Free + 1
-            Distc += abs(ipath[0][0] - ipath[j+1][0])
+            #print (Free)
+            Distc += abs((ipath[0][0] - ipath[j+1][0]) + (ipath[0][1] - ipath[j+1][1]))
 
-    F = A*Dist + B*Free + C*Distc + eucledean(start, ipath[0])
+    F = A*Dist + B*Free + C*Distc #+ eucledean(start, ipath[0])
     return F
 
 
+# swaps genes between two minipaths at random intersection
 def crossover(parent1,parent2):
     #parents are mini-paths of length=path_size
     #single crossover point chosen where valid
@@ -206,6 +221,7 @@ def crossover(parent1,parent2):
     return parent1, parent2
 
 
+# mutates a minipath by 1 gene based on random probability
 def mutation(child,map,size):
     #single gene is selected at random
     point = random.randint(0, len(child)-1)
@@ -226,7 +242,6 @@ def mutation(child,map,size):
                 precedents.append(i)
 
     #random precedent selected
-
     if precedents:
         xpoint = random.randint(0, len(precedents)-1)
         child[point] = precedents[xpoint] #mutate random gene with new gene
@@ -234,6 +249,7 @@ def mutation(child,map,size):
     return (child)
 
 
+# computes eucledean distance between two nodes
 def eucledean(a, b):
     # Eucledean distance
     #print("a=", a, "b=", b)
@@ -276,12 +292,10 @@ def successors(map, size, v):
     if a and (map[x - 1, y] == 1 or map[x - 1, y] == (255,255,255)):
         points.append((x - 1, y))
 
-    ## uncomment this to remove priority
-    # shuffle(points)
-
     return points
 
 
+# displays input image with route overlay
 def visualize_search(save_file="do_not_save.png"):
     """
     :param save_file: (optional) filename to save image to (no filename given means no save file)
@@ -290,12 +304,15 @@ def visualize_search(save_file="do_not_save.png"):
     pixel_access = im.load()
 
     # draw path pixels
-    for pixel in path:
-        pixel_access[pixel[0], pixel[1]] = PURPLE
+    for index, pixel in enumerate(path):
+        if index % 2 == 0:
+            pixel_access[pixel[0], pixel[1]] = BLUE
+        else:
+            pixel_access[pixel[0], pixel[1]] = PURPLE
 
     # draw start and end pixels
-    pixel_access[start[0], start[1]] = NEON_GREEN
-    pixel_access[end[0], end[1]] = NEON_GREEN
+    pixel_access[start[0], start[1]] = GREEN
+    pixel_access[end[0], end[1]] = GREEN
 
     # display and (maybe) save results
     im.show()
@@ -305,6 +322,7 @@ def visualize_search(save_file="do_not_save.png"):
     im.close()
 
 
+# run-time function: reads input image and starts search
 if __name__ == "__main__":
     # Throw Errors && Such
     # global difficulty, start, end
@@ -317,33 +335,21 @@ if __name__ == "__main__":
     print "running " + function_name + " with " + difficulty + " difficulty."
 
     # Hard code start and end positions of search for each difficulty level
-    if difficulty == "trivial.gif":
-        start = (8, 1)
-        end = (20, 1)
-    elif difficulty == "medium.gif":
-        start = (8, 201)
-        end = (110, 1)
-    elif difficulty == "hard.gif":
-        start = (10, 1)
-        end = (401, 220)
-    elif difficulty == "very_hard.gif":
-        start = (1, 324)
-        end = (580, 1)
-    elif difficulty == "custom.gif":
+    if difficulty == "custom.gif":
         start = (6, 50)
         end = (155, 6)
     elif difficulty == "Test_grid.jpg":
-        start = (1, 1)
+        start = (0, 0)
         end = (99, 99)
     elif difficulty == "test1.gif":
         start = (0, 0)
-        end = (400, 560)
+        end = (569, 569)
     elif difficulty == "test2.gif":
         start = (0, 0)
-        end = (230, 230)
+        end = (239, 239)
     elif difficulty == "test3.gif":
         start = (0, 0)
-        end = (130, 130)
+        end = (139, 139)
     else:
         assert False, "Incorrect difficulty level provided"
 
