@@ -1,5 +1,5 @@
 from PIL import Image
-# import pygame
+import turtle
 import numpy
 import queue as Q
 import time
@@ -14,10 +14,10 @@ yellow = (255, 255, 100)
 
 # map deficullty
 # easiest
-# pic1 = "test.gif"
-# pic2 = "test_2.gif"
-# pic3 = "test_3.gif"
-# pic4 = "test_4.gif"
+pic1 = "test.gif"
+pic2 = "test_2.gif"
+pic3 = "test_3.gif"
+pic4 = "test_4.gif"
 
 # easy - few obstacles
 # pic1 = "test3.gif"
@@ -30,16 +30,17 @@ yellow = (255, 255, 100)
 # pic4 = "Store4.gif"
 
 #Medium
-pic1 = "test2.gif"
-pic2 = "test2_2.gif"
-pic3 = "test2_3.gif"
-pic4 = "test2_4.gif"
+# pic1 = "test2.gif"
+# pic2 = "test2_2.gif"
+# pic3 = "test2_3.gif"
+# pic4 = "test2_4.gif"
 
 # very Hard
 # pic1 = "test1.gif"
 
 
 def scan(area):
+    obs_loc = []
     im = Image.open(area).convert("RGB")
     size = im.size
     columns = size[0]
@@ -53,6 +54,9 @@ def scan(area):
                 grid[i, j] = 0
             elif value == black:
                 grid[i, j] = 1
+                obs_loc.append((i, j))
+    # print(obs_loc)
+
 
     return grid, columns, rows, im
 
@@ -228,8 +232,9 @@ def visualize_search(im, path, revisited):
     pixel_access[end[0], end[1]] = red
 
     # display and (maybe) save results
-    im.show()
-    im.save("out.png")
+    out = im.resize((500, 500))
+    out.show()
+    out.save("out.png")
 
 
 def ccd_star_plan(start, end, front, grid, columns, rows, im):
@@ -274,6 +279,8 @@ def nob_front(clean, dirty):
 
 
 # Get start time
+
+
 runstart = time.time()
 
 start = (0, 1)
@@ -309,6 +316,7 @@ while spot != end:
     ahead = dirty[i + 1]
     if grid[ahead[0], ahead[1]] == 1:
         prox = nob_front(clean, dirty1)
+        print(len(front))
         dirty = ccd_star_plan(spot, end, front, grid, columns, rows, im)
         count = count + 1
         output = mapcount(count)
@@ -324,3 +332,4 @@ print('TOTAL EXECUTION TIME FOR Planning: ' + str(runstop - runstart))
 
 dupe = overlapped(clean)
 visualize_search(im1, dirty1, dupe)
+
