@@ -28,7 +28,7 @@ path = []  # an ordered list of (x,y) tuples, representing the path to traverse 
 
 A = 50 #global constants
 B = 100
-C = -20
+C = -10
 
 # performs genetic search of area with goal of exploring all free nodes
 def search(map, size):
@@ -57,6 +57,7 @@ def search(map, size):
     node = Ps #current position of robot
 
     cfree,cobs = nodegraph(map,size)
+    cleaned = []
     print ("Free Nodes in Map: ", len(cfree))
     print ("Obstacle Nodes in Map: ", len(cobs))
     print ("Total Nodes in Map: ", len(cfree)+len(cobs))
@@ -66,7 +67,7 @@ def search(map, size):
     minipath = get_minipaths(map, size, node, path_size, 8)
 
     # Genetic Motion Planner
-    while (count != 15000): # and (Pe not in clean):
+    while (count < len(cfree)): #(count != 1500): # and (Pe not in clean):
         count += 1
         print("# OF GENERATIONS>>", count)
 
@@ -92,7 +93,7 @@ def search(map, size):
         #print("parent2", parent2)
 
         # 50% chance of Crossover
-        if random.randint(0, 1) == 2:
+        if random.randint(0, 1) == 1:
             # Crossover
             child1, child2 = crossover(parent1, parent2)
         else:
@@ -122,6 +123,8 @@ def search(map, size):
         minipath.append(child1)
         minipath.append(child2)
         #print("minipath", minipath)
+
+        #cleaned = [x for x in cfree if x in clean]  # list of visited nodes
 
     path.extend(clean)
     #print(path)
@@ -241,12 +244,13 @@ def mutation(child,map,size):
             else:
                 precedents.append(i)
 
+    mutchild = child
     #random precedent selected
     if precedents:
         xpoint = random.randint(0, len(precedents)-1)
-        child[point] = precedents[xpoint] #mutate random gene with new gene
+        mutchild[point] = precedents[xpoint] #mutate random gene with new gene
         #print ("mutantchild", child)
-    return (child)
+    return (mutchild)
 
 
 # computes eucledean distance between two nodes
