@@ -1,3 +1,16 @@
+'''
+RBE550 Fall 2018 Total Coverage Team Project
+WPI MS Robotics engineering
+Ryan Ferrin, Karthick Dhavamani, Krishna Matta
+2018/Dec/09
+1 of 3 algorithms tested for complete Coverage
+
+This is an Implementation of Complete Coverage D* algorithm described by
+Marija Dakulović ∗ Sanja Horvatić ∗ Ivan Petrović. 2011
+
+implimentation by Ryan Ferrin 2018
+'''
+
 from PIL import Image
 import turtle
 import numpy
@@ -20,6 +33,7 @@ pic3 = "test_3.gif"
 pic4 = "test_4.gif"
 scl_fctr = 57
 bot_size = (3, 2)
+redraw = 1
 
 # easy - few obstacles
 # pic1 = "test3.gif"
@@ -32,6 +46,7 @@ bot_size = (3, 2)
 # pic4 = "Store4.gif"
 # scl_fctr = 7
 # bot_size = (.5, .5)
+# redraw = 3
 
 #Medium
 # pic1 = "test2.gif"
@@ -40,6 +55,7 @@ bot_size = (3, 2)
 # pic4 = "test2_4.gif"
 # scl_fctr = 7
 # bot_size = (.5, .5)
+# redraw = 4
 
 # very Hard
 # pic1 = "test1.gif"
@@ -395,7 +411,7 @@ bot.shape('turtle')
 bot.resizemode("user")
 bot.shapesize(bot_size[0], bot_size[1])
 bot.pensize(scl_fctr)
-bot.speed(7)
+bot.speed(2)
 bot.color("yellow", "black")
 
 spy = turtle.Turtle()
@@ -445,12 +461,8 @@ while spot != end:
     clean.append(spot)
     if spot == end:
          break
-    #look ahead
-    ahead = dirty[i + 1]
-    if grid[ahead[0], ahead[1]] == 1:
-        # front = nob_front(clean, dirty1)
-        dirty = ccd_star_plan(spot, end, front, grid, columns, rows, im)
-        count = count + 1
+    #redraw map
+    if i == redraw:
         output = mapcount(count)
         grid = output[0]
         im = output[3]
@@ -458,6 +470,15 @@ while spot != end:
         new_obs(obs, obs1)
         draw_nobs(obs, obs_old)
         obs_old = obs
+
+    #look ahead
+    ahead = dirty[i + 1]
+    if grid[ahead[0], ahead[1]] == 1:
+        # front = nob_front(clean, dirty1)
+        dirty = ccd_star_plan(spot, end, front, grid, columns, rows, im)
+        count = count + 1
+        if count > 4:
+            redraw = 20
 
         i = 0
     else:
