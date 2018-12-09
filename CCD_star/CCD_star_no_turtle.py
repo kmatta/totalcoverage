@@ -1,4 +1,3 @@
-
 '''
 RBE550 Fall 2018 Total Coverage Team Project
 WPI MS Robotics engineering
@@ -7,9 +6,12 @@ Ryan Ferrin, Karthick Dhavamani, Krishna Matta
 1 of 3 algorithms tested for complete Coverage
 
 This is an Implementation of Complete Coverage D* algorithm described by
-Marija Dakulović ∗ Sanja Horvatić ∗ Ivan Petrović. 2011
+Marija Dakulovic ∗ Sanja Horvatic ∗ Ivan Petrovic. 2011
 
-implimentation by Ryan Ferrin 2018
+implementation by Ryan Ferrin 2018
+
+The code simulates new and dynamic obstacles by loading in variations of the first map. to run select which level to solve
+and un-comment the group of 4 images. and comment out the other images
 '''
 
 from PIL import Image
@@ -17,6 +19,7 @@ import numpy
 import queue as Q
 import time
 
+# colors used to draw images
 white = (255, 255, 255)
 black = (0, 0, 0)
 blue = (0, 0, 255)
@@ -25,14 +28,14 @@ red = (255, 0, 0)
 purple = (85, 26, 139)
 yellow = (255, 255, 100)
 
-# map deficullty
+# map difficultly
 # easiest
-# pic1 = "test.gif"
-# pic2 = "test_2.gif"
-# pic3 = "test_3.gif"
-# pic4 = "test_4.gif"
+# pic1 = "bedroom.gif"
+# pic2 = "bedroom_2.gif"
+# pic3 = "bedroom_3.gif"
+# pic4 = "bedroom_4.gif"
 
-# easy - few obstacles
+# easy - few obstacles This set requires 2 more images to run
 # pic1 = "test3.gif"
 # pic2 = "test3_2.gif"
 
@@ -43,17 +46,19 @@ pic3 = "Store3.gif"
 pic4 = "Store4.gif"
 
 #Medium
-# pic1 = "test2.gif"
-# pic2 = "test2_2.gif"
-# pic3 = "test2_3.gif"
-# pic4 = "test2_4.gif"
+# pic1 = "room.gif"
+# pic2 = "room_2.gif"
+# pic3 = "room_3.gif"
+# pic4 = "room_4.gif"
 
 # very Hard
 # pic1 = "test1.gif"
 
 
+# convert images to numeric grid
 def scan(area):
     obs_loc = []
+    cfree = []
     im = Image.open(area).convert("RGB")
     size = im.size
     columns = size[0]
@@ -65,15 +70,16 @@ def scan(area):
             value = im.getpixel((i, j))
             if value == white:
                 grid[i, j] = 0
+                cfree.append((i, j))
             elif value == black:
                 grid[i, j] = 1
                 obs_loc.append((i, j))
-    # print(obs_loc)
-
+    print("number of obstacle nodes" + str(len(obs_loc)))
+    print("number of free nodes" + str(len(cfree)))
 
     return grid, columns, rows, im
 
-
+# iterate the map to be used
 def mapcount(count):
 
     if count == 2:
@@ -87,6 +93,7 @@ def mapcount(count):
     return output
 
 
+# find repeated nodes
 def overlapped(path):
     seen = {}
     revisited = []
@@ -98,18 +105,20 @@ def overlapped(path):
             if seen[x] == 1:
                 revisited.append(x)
             seen[x] += 1
+    print("number of repeated nodes" + str(len(revisited)))
     return revisited
 
+# cost used by CCD*
 def cost(x, y, end):
     h = (abs(x - end[0]) + abs(y - end[1])) * -1
     return h
 
-
+# cost used by D*
 def bt_cost(x, y, goal):
     k = (abs(x - goal[0]) + abs(y - goal[1]))
     return k
 
-
+# classify neighbor nodes for CCD*
 def sort(x, y, end, path, grid, neighbors, columns, rows, front):
 
     # Check for boundary
@@ -134,7 +143,7 @@ def sort(x, y, end, path, grid, neighbors, columns, rows, front):
     else:
         print(grid[x, y])
 
-
+# classify neighbor nodes of D*
 def bt_sort(x, y, goal, bt_path, grid,  neighbors, columns, rows):
     # Check for boundary
     if x < 0 or x > columns - 1 or y < 0 or y > rows - 1:
@@ -152,7 +161,7 @@ def bt_sort(x, y, goal, bt_path, grid,  neighbors, columns, rows):
     else:
         print(grid[x, y])
 
-
+# neighbor search for D*
 def bt_explore(bt_pos, goal, bt_path, bt_next, grid, columns, rows):
 
     bt_neighbors = Q.PriorityQueue()  # priority q for planning algorithm
@@ -170,7 +179,7 @@ def bt_explore(bt_pos, goal, bt_path, bt_next, grid, columns, rows):
     bt_first = bt_neighbors.get()
     bt_next.append(bt_first[1])
 
-
+# find closest "dirty" or unexplored node for D* search
 def nearest_front(current_pos, front):
     near = 1.0e12
     if len(front) <= 1:
@@ -184,7 +193,7 @@ def nearest_front(current_pos, front):
                 goal = front[n]
     return goal
 
-
+# preform D* search if no available neighbors in CCD*
 def backtrack(current_pos, grid, columns, rows, front, path, prox):
     bt_next = []
     bt_path = []
@@ -203,7 +212,7 @@ def backtrack(current_pos, grid, columns, rows, front, path, prox):
         bt_explore(bt_pos, goal, bt_path, bt_next, grid, columns, rows)
 
 
-
+# explore neighbors for CCD*
 def explore(current_pos, grid, columns, rows, path, front, prox):
 
     neighbors = Q.PriorityQueue()  # priority q for planning algorithm
@@ -220,12 +229,12 @@ def explore(current_pos, grid, columns, rows, path, front, prox):
         backtrack(current_pos, grid, columns, rows, front, path, prox)
         return
     first = neighbors.get()
-    if first[1] == end and len(front) > 1:
-        backtrack(current_pos, grid, columns, rows, front, path, prox)
-        return
+    # if first[1] == end and len(front) > 1:
+    #     backtrack(current_pos, grid, columns, rows, front, path, prox)
+    #     return
     prox.append(first[1])
 
-
+# produce image of search/path execution
 def visualize_search(im, path, revisited):
     pixel_access = im.load()
 
@@ -250,7 +259,7 @@ def visualize_search(im, path, revisited):
     out.show()
     out.save("out.png")
 
-
+# run the CCD* planner
 def ccd_star_plan(start, end, front, grid, columns, rows, im):
     prox = []  # a list of all the places left to explore
     path = []  # an ordered list of (x,y) tuples, representing the path to traverse from start-->goal
@@ -282,7 +291,7 @@ def ccd_star_plan(start, end, front, grid, columns, rows, im):
     # print(path)
     return path
 
-
+# identify nodes that are still dirty before re-planning
 def nob_front(clean, dirty):
     front= []
     n = len(clean)
@@ -292,8 +301,8 @@ def nob_front(clean, dirty):
     return front
 
 
+#follow planned path
 # Get start time
-
 
 runstart = time.time()
 
@@ -302,7 +311,6 @@ end = (0, 0)
 
 front = []  # a list of where we haven't tried to go
 clean = [] # a list of where we've been
-# dirty = []
 
 count = 1
 output1 = mapcount(count)
@@ -346,44 +354,3 @@ print('TOTAL EXECUTION TIME FOR Planning: ' + str(runstop - runstart))
 
 dupe = overlapped(clean)
 visualize_search(im1, dirty1, dupe)
-grid1 = output1[0]
-columns = output1[1]
-rows = output1[2]
-im1 = output1[3]
-
-dirty = ccd_star_plan(start, end, front, grid1, columns, rows, im1)
-dirty1 = dirty
-
-count = 2
-output2 = mapcount(count)
-grid = output2[0]
-im = output2[3]
-spot = 0
-i=0
-
-while spot != end:
-    spot = dirty[i]
-    clean.append(spot)
-    if spot == end:
-         break
-    #look ahead
-    ahead = dirty[i + 1]
-    if grid[ahead[0], ahead[1]] == 1:
-        prox = nob_front(clean, dirty1)
-        print(len(front))
-        dirty = ccd_star_plan(spot, end, front, grid, columns, rows, im)
-        count = count + 1
-        output = mapcount(count)
-        grid = output[0]
-        im = output[3]
-        i = 0
-    else:
-        i = i + 1
-
-runstop = time.time()
-print('Final Path Length ' + str(len(clean)))
-print('TOTAL EXECUTION TIME FOR Planning: ' + str(runstop - runstart))
-
-dupe = overlapped(clean)
-visualize_search(im1, dirty1, dupe)
-
