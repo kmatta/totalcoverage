@@ -343,7 +343,15 @@ if __name__ == "__main__":
 
     assert sys.version_info[0] == 2                                 # require python 2 (instead of python 3)
 
-    # Perform search on given image
+    # 0 is obstacle and 1 is free spaces
+
+    # Perform search on Room.gif
+    # im = Image.open("Room.gif")
+    # size = im.size
+    # img = im.load()
+
+
+    # Perform search on Store.gif
     im = Image.open("Store.gif")
     size = im.size
     img = im.load()
@@ -362,6 +370,5 @@ if __name__ == "__main__":
     complete_coverage(im, size) # Main Algorithm definition
     toc = time.time()
     print "Time Taken: {0} secs".format(toc-tic)
-    print "Percentage Coverage: {0:.2f} %".format(len(traversed)*100/free_space)
-    pdb.set_trace()
     plot_map(im,"out.png") # Save the output file in the current folder
+    plt.show()
