@@ -343,8 +343,10 @@ if __name__ == "__main__":
 
     assert sys.version_info[0] == 2                                 # require python 2 (instead of python 3)
 
-    # Perform search on test2.gif
-    # im = Image.open("test2.gif")
+    # 0 is obstacle and 1 is free spaces
+
+    # Perform search on Room.gif
+    # im = Image.open("Room.gif")
     # size = im.size
     # img = im.load()
 
