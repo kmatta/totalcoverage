@@ -6,9 +6,13 @@ Ryan Ferrin, Karthick Dhavamani, Krishna Matta
 1 of 3 algorithms tested for complete Coverage
 
 This is an Implementation of Complete Coverage D* algorithm described by
-Marija Dakulović ∗ Sanja Horvatić ∗ Ivan Petrović. 2011
+Marija Dakulovic ∗ Sanja Horvatic ∗ Ivan Petrovic. 2011
 
-implimentation by Ryan Ferrin 2018
+implementation by Ryan Ferrin 2018
+
+the code simulates new and dynamic obstacles by loading in variations of the first map. to run select which level to solve
+and un-comment the group of 4 images. and comment out the other images also included are command used for the turtle to
+draw the  rooms an plat the paths
 '''
 
 from PIL import Image
@@ -17,6 +21,7 @@ import numpy
 import queue as Q
 import time
 
+# colors used to draw images
 white = (255, 255, 255)
 black = (0, 0, 0)
 blue = (0, 0, 255)
@@ -27,10 +32,10 @@ yellow = (255, 255, 100)
 
 # map deficullty
 # easiest
-pic1 = "test.gif"
-pic2 = "test_2.gif"
-pic3 = "test_3.gif"
-pic4 = "test_4.gif"
+pic1 = "bedroom.gif"
+pic2 = "bedroom_2.gif"
+pic3 = "bedroom_3.gif"
+pic4 = "bedroom_4.gif"
 scl_fctr = 57
 bot_size = (3, 2)
 redraw = 1
@@ -49,10 +54,10 @@ redraw = 1
 # redraw = 3
 
 #Medium
-# pic1 = "test2.gif"
-# pic2 = "test2_2.gif"
-# pic3 = "test2_3.gif"
-# pic4 = "test2_4.gif"
+# pic1 = "room.gif"
+# pic2 = "room_2.gif"
+# pic3 = "room_3.gif"
+# pic4 = "room_4.gif"
 # scl_fctr = 7
 # bot_size = (.5, .5)
 # redraw = 4
@@ -60,7 +65,7 @@ redraw = 1
 # very Hard
 # pic1 = "test1.gif"
 
-
+# convert images to numeric grid
 def scan(area):
     obs_loc = []
     im = Image.open(area).convert("RGB")
@@ -82,7 +87,7 @@ def scan(area):
 
     return grid, columns, rows, im, obs_loc
 
-
+# have turtle draw room (this is a slow process for large rooms)
 def draw_floor(grid):
     for m in range(columns):
         for n in range(rows):
@@ -117,7 +122,7 @@ def draw_floor(grid):
         else:
             spy.color("white")
 
-
+# determine which way the robot needs to go next.
 def bot_point(spot, old_spot):
     face = (spot[0] - old_spot[0], spot[1] - old_spot[1])
     if face == (0, 1):
@@ -130,7 +135,7 @@ def bot_point(spot, old_spot):
         pointer = 180
     return pointer
 
-
+# iterate the map to be used
 def mapcount(count):
 
     if count == 2:
@@ -143,7 +148,7 @@ def mapcount(count):
         output = scan(pic1)
     return output
 
-
+# find repeated nodes
 def overlapped(path):
     seen = {}
     revisited = []
@@ -157,16 +162,19 @@ def overlapped(path):
             seen[x] += 1
     return revisited
 
+
+# cost used by CCD*
 def cost(x, y, end):
     h = (abs(x - end[0]) + abs(y - end[1])) * -1
     return h
 
 
+# cost used by D*
 def bt_cost(x, y, goal):
     k = (abs(x - goal[0]) + abs(y - goal[1]))
     return k
 
-
+# classify neighbor nodes for CCD*
 def sort(x, y, end, path, grid, neighbors, columns, rows, front):
 
     # Check for boundary
@@ -192,7 +200,7 @@ def sort(x, y, end, path, grid, neighbors, columns, rows, front):
     else:
         print(grid[x, y])
 
-
+# classify neighbor nodes for D*
 def bt_sort(x, y, goal, bt_path, grid,  neighbors, columns, rows):
     # Check for boundary
     if x < 0 or x > columns - 1 or y < 0 or y > rows - 1:
@@ -210,7 +218,7 @@ def bt_sort(x, y, goal, bt_path, grid,  neighbors, columns, rows):
     else:
         print(grid[x, y])
 
-
+# neighbor search for D*
 def bt_explore(bt_pos, goal, bt_path, bt_next, grid, columns, rows):
 
     bt_neighbors = Q.PriorityQueue()  # priority q for planning algorithm
@@ -229,6 +237,7 @@ def bt_explore(bt_pos, goal, bt_path, bt_next, grid, columns, rows):
     bt_next.append(bt_first[1])
 
 
+# find closest "dirty" or unexplored node for D* search
 def nearest_front(current_pos, front):
     near = 1.0e12
     if len(front) <= 1:
@@ -242,7 +251,7 @@ def nearest_front(current_pos, front):
                 goal = front[n]
     return goal
 
-
+# preform D* search if no available neighbors in CCD*
 def backtrack(current_pos, grid, columns, rows, front, path, prox):
     bt_next = []
     bt_path = []
@@ -264,7 +273,7 @@ def backtrack(current_pos, grid, columns, rows, front, path, prox):
         bt_explore(bt_pos, goal, bt_path, bt_next, grid, columns, rows)
 
 
-
+# neighbor search for CCD*
 def explore(current_pos, grid, columns, rows, path, front, prox):
 
     neighbors = Q.PriorityQueue()  # priority q for planning algorithm
@@ -287,6 +296,7 @@ def explore(current_pos, grid, columns, rows, path, front, prox):
     prox.append(first[1])
 
 
+# explore neighbors for CCD*
 def visualize_search(im, path, revisited):
     pixel_access = im.load()
 
@@ -312,6 +322,7 @@ def visualize_search(im, path, revisited):
     out.save("out.png")
 
 
+# run the CCD* planner
 def ccd_star_plan(start, end, front, grid, columns, rows, im):
     prox = []  # a list of all the places left to explore
     path = []  # an ordered list of (x,y) tuples, representing the path to traverse from start-->goal
@@ -347,7 +358,7 @@ def ccd_star_plan(start, end, front, grid, columns, rows, im):
     # print(path)
     return path
 
-
+# identify nodes that are still dirty before re-planning
 def nob_front(clean, dirty):
     front = []
     n = len(clean)
@@ -356,14 +367,14 @@ def nob_front(clean, dirty):
         n += 1
     return front
 
-
+# identify new obstacle nodes
 def new_obs(obs, obs1):
 
     for i in range(len(obs1)):
         if obs1[i] in obs:
             obs.remove(obs1[i])
 
-
+# # draw new obstacles with turtle
 def draw_nobs(obs, obs_old):
     spy.penup()
     if len(obs_old) > 1:
@@ -384,6 +395,7 @@ def draw_nobs(obs, obs_old):
 
 
 #### MAIN ####
+# follow Path move turtle bot
 
 start = (0, 1)
 end = (0, 0)
