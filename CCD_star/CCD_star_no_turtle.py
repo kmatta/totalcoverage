@@ -229,9 +229,9 @@ def explore(current_pos, grid, columns, rows, path, front, prox):
         backtrack(current_pos, grid, columns, rows, front, path, prox)
         return
     first = neighbors.get()
-    # if first[1] == end and len(front) > 1:
-    #     backtrack(current_pos, grid, columns, rows, front, path, prox)
-    #     return
+    if first[1] == end and len(front) > 1:
+        backtrack(current_pos, grid, columns, rows, front, path, prox)
+        return
     prox.append(first[1])
 
 # produce image of search/path execution
